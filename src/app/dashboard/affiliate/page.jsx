@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import DashboardContainer from "@/components/DashboardContainer";
+import Link from 'next/link';
 
 export default function AffiliatePage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -156,7 +157,7 @@ export default function AffiliatePage() {
                   onClick={() => handleTabChange('active')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     activeTab === 'active'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-[#082B82] text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
                   }`}
                 >
@@ -232,9 +233,10 @@ export default function AffiliatePage() {
                       <td className="px-6 py-4 text-sm text-gray-900">{affiliate.conversion}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{affiliate.products}</td>
                       <td className="px-6 py-4">
-                        <button className="text-sm text-gray-600 hover:text-gray-900">
-                          View details
-                        </button>
+                     <Link href={`/affiliates/${affiliate.id}`} className="text-sm text-gray-600 hover:text-gray-900">
+  View details
+</Link>
+
                       </td>
                     </tr>
                   ))

@@ -44,7 +44,7 @@ export default function LoginPage() {
     e.preventDefault();
     const otpCode = otp.join("");
     if (otpCode.length === 6) {
-      router.push("/dashboard"); // ✅ Redirect to dashboard
+      router.push("/dashboard/overview"); // ✅ Redirect to dashboard
     }
   };
 

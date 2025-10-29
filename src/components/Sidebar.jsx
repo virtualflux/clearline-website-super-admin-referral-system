@@ -15,11 +15,12 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/dashboard/overview", label: "Overview", icon: Home },
+    { href: "/dashboard/products", label: "Products", icon: TrendingUp },
   { href: "/dashboard/affiliate", label: "Affiliate", icon: Users },
   { href: "/dashboard/payout", label: "Payout", icon: DollarSign },
-  { href: "/dashboard/commission", label: "Commission", icon: TrendingUp },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  // { href: "/dashboard/commission", label: "Commission", icon: TrendingUp },
+  // { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  // { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {
