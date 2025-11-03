@@ -9,7 +9,7 @@ const ProductsPage = () => {
   const [showActions, setShowActions] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [modalStep, setModalStep] = useState(1); // 1 for product details, 2 for commission
+  const [modalStep, setModalStep] = useState(1);  
   
   // Form states
   const [productName, setProductName] = useState('');

@@ -1,274 +1,231 @@
-'use client'
-import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChevronDown, ArrowLeft, Calendar } from 'lucide-react';
+'use client';
+
 import DashboardContainer from '@/components/DashboardContainer';
+import { useParams, useRouter } from 'next/navigation';
+import React from 'react';
+import { Calendar, ChevronDown, ChevronLeft } from 'lucide-react';
 
-export default function AffiliateDetailsPage() {
-  const [timeRange, setTimeRange] = useState('Last 30 days');
-  const [showActions, setShowActions] = useState(false);
+ 
+const formatNGN = (amount) => {
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+ 
+const affiliateData = {
+  1: {
+    name: 'Sarah Johnson',
+    email: 'Sarah.Johnson@gmail.com',
+    joined: '01/01/2025',
+    status: 'Active',
+    totalSales: 120000,
+    salesChange: '+23%',
+    salesLastMonth: '+3.3%',
+    totalCommission: 120000,
+    commissionChange: '+100%',
+    totalSalesRate: '1.2%',
+    salesRateChange: '+3%',
+    totalWithdrawal: 124000,
+    withdrawalChange: '+23%',
+    totalClicks: 1000,
+    clicksChange: '+2.3%',
+    products: [
+      { name: 'Kia Kia plan', clicks: 5240, conversions: 128, commission: 22000, rate: '2.44%' },
+      { name: 'Bronze', clicks: 5240, conversions: 128, commission: 22000, rate: '2.44%' },
+      { name: 'Silver', clicks: 5240, conversions: 128, commission: 22000, rate: '2.44%' },
+      { name: 'Platinum', clicks: 5240, conversions: 128, commission: 22000, rate: '2.44%' },
+    ],
+  },
+};
 
-  // Mock data for the affiliate
-  const affiliate = {
-    id: 1,
-    name: 'Sarah Johson',
-    email: 'Sarah.Johson@gmail.com',
-    joinDate: '01/01/2025',
-    status: 'Active'
-  };
+export default function AffiliateDetail() {
+  const { id } = useParams();
+  const router = useRouter();
+  const data = affiliateData[id] || null;
 
-  // Stats data
-  const stats = [
-    {
-      label: 'Total Sales',
-      value: '₦120,000',
-      change: '+23%',
-      subText: '+3.3% from last month',
-      isPositive: true,
-      isHighlighted: true
-    },
-    {
-      label: 'Total commission',
-      value: '₦120,000',
-      change: '+100%',
-      isPositive: true,
-      isHighlighted: false
-    },
-    {
-      label: 'Total sales',
-      value: '1.2%',
-      change: '+3%',
-      isPositive: true,
-      isHighlighted: false
-    },
-    {
-      label: 'Total withdrawal',
-      value: '₦124,000',
-      change: '+23%',
-      isPositive: true,
-      isHighlighted: false
-    },
-    {
-      label: 'Total clicks',
-      value: '1000',
-      change: '+2.3%',
-      isPositive: true,
-      isHighlighted: false
-    }
-  ];
-
-  // Chart data
-  const chartData = [
-    { day: 1, value: 100000 },
-    { day: 2, value: 120000 },
-    { day: 3, value: 115000 },
-    { day: 4, value: 180000 },
-    { day: 5, value: 160000 },
-    { day: 6, value: 140000 },
-    { day: 7, value: 100000 },
-    { day: 8, value: 80000 },
-    { day: 9, value: 90000 },
-    { day: 10, value: 110000 },
-    { day: 11, value: 130000 },
-    { day: 12, value: 150000 },
-    { day: 13, value: 170000 },
-    { day: 14, value: 160000 },
-    { day: 15, value: 180000 },
-    { day: 16, value: 200000 },
-    { day: 17, value: 190000 },
-    { day: 18, value: 170000 },
-    { day: 19, value: 150000 },
-    { day: 20, value: 140000 },
-    { day: 21, value: 130000 },
-    { day: 22, value: 140000 },
-    { day: 23, value: 160000 },
-    { day: 24, value: 180000 },
-    { day: 25, value: 200000 },
-    { day: 26, value: 190000 },
-    { day: 27, value: 180000 },
-    { day: 28, value: 170000 },
-    { day: 29, value: 160000 },
-    { day: 30, value: 150000 },
-    { day: 31, value: 140000 }
-  ];
-
-  // Products data
-  const products = [
-    { name: 'Kia Kia plan', clicks: 5240, conversions: 128, commission: '₦22,000', conversionRate: '2.44%' },
-    { name: 'Bronze', clicks: 5240, conversions: 128, commission: '₦22,000', conversionRate: '2.44%' },
-    { name: 'Silver', clicks: 5240, conversions: 128, commission: '₦22,000', conversionRate: '2.44%' },
-    { name: 'Plantinum', clicks: 5240, conversions: 128, commission: '₦22,000', conversionRate: '2.44%' }
-  ];
+  if (!data) {
+    return (
+      <DashboardContainer>
+        <div className="p-8 text-center text-gray-500">Affiliate not found</div>
+      </DashboardContainer>
+    );
+  }
 
   return (
-    <DashboardContainer> 
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 text-gray-700 hover:text-gray-900">
-              <ArrowLeft className="w-5 h-5" />
-              <span className="font-semibold text-lg">{affiliate.name}</span>
+    <DashboardContainer>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        {/* Breadcrumb + Actions */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <button onClick={() => router.back()} className="flex items-center space-x-1 hover:text-gray-900">
+              <ChevronLeft className="w-4 h-4" />
+              <span>{data.name}</span>
             </button>
+            <span>/</span>
+            <span>Affiliate details</span>
           </div>
-          <div className="relative">
-            <button 
-              onClick={() => setShowActions(!showActions)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Actions
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            {showActions && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                <button className="w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-gray-50 flex items-center gap-2">
-                  <span>⚠️</span> Suspend
-                </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2">
-                  <span>🗑️</span> Delete profile
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Breadcrumb */}
-        <div className="text-sm text-gray-500 mb-6">
-          Affiliates / <span className="text-gray-900">Affiliate details</span>
+          <div className="flex items-center space-x-3">
+            <select className="px-4 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option>Actions</option>
+            </select>
+            <button className="px-4 py-2 text-sm text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+              Suspend
+            </button>
+            <button className="px-4 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+              Delete profile
+            </button>
+          </div>
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">{affiliate.name}</h2>
-          <div className="flex items-center gap-6 mb-3">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>✉️</span>
-              <span>{affiliate.email}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>📅</span>
-              <span>Joined {affiliate.joinDate}</span>
-            </div>
-          </div>
-          <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-green-50 text-green-700">
-            {affiliate.status}
-          </span>
-        </div>
-
-        {/* Time Range Selector */}
-        <div className="flex justify-end mb-4">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
-            <Calendar className="w-4 h-4" />
-            {timeRange}
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-5 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <div 
-              key={index} 
-              className={`rounded-lg p-4 ${
-                stat.isHighlighted 
-                  ? 'bg-indigo-600 text-white border-2 border-indigo-700' 
-                  : 'bg-white border border-gray-200'
-              }`}
-            >
-              <div className={`text-sm mb-2 ${stat.isHighlighted ? 'text-indigo-100' : 'text-gray-500'}`}>
-                {stat.label}
-              </div>
-              <div className="flex items-baseline gap-2 mb-1">
-                <div className={`text-2xl font-semibold ${stat.isHighlighted ? 'text-white' : 'text-gray-900'}`}>
-                  {stat.value}
-                </div>
-                <div className={`text-sm ${stat.isHighlighted ? 'text-indigo-100' : 'text-gray-500'}`}>
-                  {stat.change}
-                </div>
-              </div>
-              {stat.subText && (
-                <div className={`text-xs ${stat.isHighlighted ? 'text-indigo-100' : 'text-green-600'}`}>
-                  {stat.subText}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Chart Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <div className="mb-6">
-            <div className="text-xs text-gray-500 mb-1">JULY</div>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="day" 
-                stroke="#9ca3af"
-                tick={{ fill: '#9ca3af', fontSize: 12 }}
-                axisLine={{ stroke: '#e5e7eb' }}
-              />
-              <YAxis 
-                stroke="#9ca3af"
-                tick={{ fill: '#9ca3af', fontSize: 12 }}
-                axisLine={{ stroke: '#e5e7eb' }}
-                tickFormatter={(value) => `₦${value / 1000}k`}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  fontSize: '12px'
-                }}
-                formatter={(value) => [`₦${value.toLocaleString()}`, 'Sales']}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#000000" 
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Products Performance Table */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
+          <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Products performance</h3>
-              <p className="text-sm text-gray-500">Products this affiliate promote</p>
+              <h2 className="text-xl font-semibold text-gray-900">{data.name}</h2>
+              <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                <span className="flex items-center">
+                  Email: {data.email}
+                </span>
+                <span>•</span>
+                <span className="flex items-center">
+                  Joined {data.joined}
+                </span>
+              </div>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
-              <Calendar className="w-4 h-4" />
-              {timeRange}
-              <ChevronDown className="w-4 h-4" />
-            </button>
+            <span className="px-3 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+              {data.status}
+            </span>
           </div>
-          
+        </div>
+
+        {/* Performance Overview + Chart */}
+        <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-medium text-gray-900">Performance Overview</h3>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Calendar className="w-4 h-4" />
+              <span>Last 30 days</span>
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-5 gap-6 mb-8">
+            {/* Total Sales */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Total Sales</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNGN(data.totalSales)}
+                <span className="ml-1 text-sm text-green-600">{data.salesChange}</span>
+              </p>
+              <p className="text-xs text-gray-500">{data.salesLastMonth} from last month</p>
+            </div>
+
+            {/* Total Commission */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Total commission</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNGN(data.totalCommission)}
+                <span className="ml-1 text-sm text-green-600">{data.commissionChange}</span>
+              </p>
+            </div>
+
+            {/* Total Sales (Rate) */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Total sales</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {data.totalSalesRate}
+                <span className="ml-1 text-sm text-green-600">{data.salesRateChange}</span>
+              </p>
+            </div>
+
+            {/* Total Withdrawal */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Total withdrawal</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNGN(data.totalWithdrawal)}
+                <span className="ml-1 text-sm text-green-600">{data.withdrawalChange}</span>
+              </p>
+            </div>
+
+            {/* Total Clicks */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">Total clicks</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {data.totalClicks.toLocaleString()}
+                <span className="ml-1 text-sm text-green-600">{data.clicksChange}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="relative h-64 bg-gray-50 rounded-lg overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 800 250">
+              {/* Grid lines */}
+              {[50, 100, 150, 200].map((y) => (
+                <line key={y} x1="50" y1={y} x2="750" y2={y} stroke="#E5E7EB" strokeWidth="1" />
+              ))}
+              {/* Y-axis labels */}
+              {['₦250k', '₦150k', '₦100k', '₦50k'].map((label, i) => (
+                <text key={label} x="30" y={50 + i * 50} className="text-xs fill-gray-500">
+                  {label}
+                </text>
+              ))}
+              {/* X-axis */}
+              <text x="50" y="230" className="text-xs fill-gray-500">JULY</text>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                <text key={d} x={50 + (d - 1) * 22.5} y="230" className="text-xs fill-gray-500">
+                  {d}
+                </text>
+              ))}
+              {/* Line */}
+              <path
+                d="M 50 150 Q 100 80, 150 120 Q 200 160, 250 140 Q 300 100, 350 130 Q 400 160, 450 145 Q 500 110, 550 130 Q 600 150, 650 135 Q 700 120, 750 140"
+                fill="none"
+                stroke="#3B82F6"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Products Performance */}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Products performance</h3>
+              <p className="text-sm text-gray-600">Products this affiliate promote</p>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Calendar className="w-4 h-4" />
+              <span>Last 30 days</span>
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500">Product</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500">Clicks</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500">Conversions</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500">Commissions</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500">Conversion rate</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clicks</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commissions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversion rate</th>
                 </tr>
               </thead>
-              <tbody>
-                {products.map((product, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">{product.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{product.clicks.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{product.conversions}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{product.commission}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{product.conversionRate}</td>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {data.products.map((p, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{p.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.clicks.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.conversions}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatNGN(p.commission)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.rate}</td>
                   </tr>
                 ))}
               </tbody>
@@ -276,7 +233,6 @@ export default function AffiliateDetailsPage() {
           </div>
         </div>
       </div>
-    </div>
     </DashboardContainer>
   );
 }
