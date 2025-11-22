@@ -1,4 +1,3 @@
- 
 "use client";
 
 import {
@@ -15,7 +14,7 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/dashboard/overview", label: "Overview", icon: Home },
-    { href: "/dashboard/products", label: "Products", icon: TrendingUp },
+  { href: "/dashboard/products", label: "Products", icon: TrendingUp },
   { href: "/dashboard/affiliate", label: "Affiliate", icon: Users },
   { href: "/dashboard/payout", label: "Payout", icon: DollarSign },
   // { href: "/dashboard/commission", label: "Commission", icon: TrendingUp },
@@ -26,12 +25,21 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
 
+  let authData;
+  if (typeof window !== "undefined") {
+    authData = JSON.parse(localStorage.getItem("authData"));
+  }
+  const initials = authData?.user.name
+    .split(" ")
+    .map((word) => word[0].toUpperCase())
+    .join("");
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg"></div>
+          <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-cyan-500 rounded-lg"></div>
           <span className="text-xl font-bold text-gray-900">Clearline</span>
         </div>
       </div>
@@ -40,11 +48,13 @@ export default function Sidebar() {
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-            SH
+            {initials}
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900">Sam Halle</p>
-            <p className="text-xs text-gray-500">SamHalle124@gmail.com</p>
+            <p className="text-sm font-medium text-gray-900">
+              {authData?.user.name}
+            </p>
+            <p className="text-xs text-gray-500">{authData?.user.email}</p>
           </div>
         </div>
       </div>

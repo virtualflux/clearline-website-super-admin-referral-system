@@ -25,7 +25,7 @@ export default function LoginPage() {
         email,
         password,
       });
-      
+
       toast.success(response.data);
       if (response.success) {
         setStep("otp");
@@ -71,7 +71,15 @@ export default function LoginPage() {
         email,
         otp: otpCode,
       });
-      
+      const { accessToken, refreshToken, user: userResponse } = response.data;
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "authData",
+          JSON.stringify({ accessToken, refreshToken, user: userResponse })
+        );
+      }
+
       toast.success(response.message);
       if (response.success) {
         router.push("/dashboard/overview");
@@ -152,9 +160,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
+                  disabled={loading}
                   className="w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-colors text-sm hover:cursor-pointer"
                 >
-                  {loading ? "Loading..." : "Continue"}
+                  {loading ? "Logging in..." : "Continue"}
                 </button>
 
                 <div className="text-center">
@@ -197,9 +206,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
+                  disabled={loading}
                   className="w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-colors text-sm hover:cursor-pointer"
                 >
-                  {loading ? "Loading..." : "Continue"}
+                  {loading ? "Logging in..." : "Continue"}
                 </button>
               </form>
             </>
