@@ -1,56 +1,54 @@
-'use client';
+"use client";
 
-import DashboardContainer from '@/components/DashboardContainer';
-import React, { useState, useMemo, useEffect } from 'react';
-import { format } from 'date-fns';
-import {
-  Calendar,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ArrowUpRight,
-  ArrowDownLeft,
-} from 'lucide-react';
-import Link from 'next/link';
+import DashboardContainer from "@/components/DashboardContainer";
+import React, { useState, useMemo, useEffect } from "react";
+import { Calendar, Search, ChevronLeft, ChevronRight, ChevronDown, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import Link from "next/link";
+import { formatCurrency, tierColors } from "@/utils/helpers";
+import apiClient from "@/app/api/client";
+import toast from "react-hot-toast";
 
-// Format currency: NGN 123,000
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
+const OverviewPage = () => {
+  const [summary, setSummary] = useState({});
+  const [affiliates, setAffiliates] = useState([]);
 
-const page = () => {
-  // Static data (as in screenshot)
-  const rawAffiliates = [
-    { id: 1, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Active', target: '1/200', tier: 'Tier 1', commissions: 123000, conversion: '2.2%', products: 500 },
-    { id: 2, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Active', target: '1/200', tier: 'Tier 2', commissions: 123000, conversion: '2.2%', products: 500 },
-    { id: 3, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Active', target: '1/200', tier: 'Tier 3', commissions: 123000, conversion: '2.2%', products: 500 },
-    { id: 4, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Suspended', target: '1/200', tier: 'Tier 4', commissions: 123000, conversion: '2.2%', products: 500 },
-    { id: 5, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Active', target: '1/200', tier: 'Tier 5', commissions: 123000, conversion: '2.2%', products: 500 },
-    { id: 6, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Active', target: '1/200', tier: 'Tier 3', commissions: 123000, conversion: '2.2%', products: 500 },
-    { id: 7, name: 'Sarah Johnson', email: 'Sarah@example.com', status: 'Active', target: '1/200', tier: 'Tier 2', commissions: 123000, conversion: '2.2%', products: 500 },
-  ];
+  // Fetch data
+  useEffect(() => {
+    const fetchOverview = async () => {
+      try {
+        const response = await apiClient.get("/admin/affiliates/overview");
+        const data = response.data;
 
-  // State
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
+        const affiliatesWithColors = data.affiliates.affiliates.map((a) => ({
+          ...a,
+          tierColor: tierColors[a.tier] || "bg-gray-100 text-gray-700",
+        }));
+
+        setSummary(data.summary);
+        setAffiliates(affiliatesWithColors);
+      } catch (error) {
+        const message =
+          error?.message ||
+          error?.response?.data?.message ||
+          "Fetch failed — please try again.";
+
+        toast.error(message);
+      }
+    };
+
+    fetchOverview();
+  }, []);
+
+  // Table filters and pagination
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 7;
 
-  // FIX: Pre-format numbers to avoid SSR toLocaleString() error
-  const totalAffiliatesFormatted = 20000..toLocaleString();
-  const activeAffiliatesFormatted = formatCurrency(120000);
-  const inactiveAffiliatesFormatted = 1245..toLocaleString();
-
-  // Filter + Search
   const filtered = useMemo(() => {
-    let list = rawAffiliates;
+    let list = affiliates;
 
-    if (activeFilter !== 'All') {
+    if (activeFilter !== "All") {
       list = list.filter((a) => a.status === activeFilter);
     }
 
@@ -58,48 +56,30 @@ const page = () => {
       const term = searchTerm.toLowerCase();
       list = list.filter(
         (a) =>
-          a.name.toLowerCase().includes(term) ||
-          a.email.toLowerCase().includes(term)
+          (a.name || "").toLowerCase().includes(term) ||
+          (a.email || "").toLowerCase().includes(term)
       );
     }
 
     return list;
-  }, [activeFilter, searchTerm]);
+  }, [activeFilter, searchTerm, affiliates]);
 
   const totalRows = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
-
-  // Reset page when filters change
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-    if (currentPage < 1) setCurrentPage(1);
-  }, [totalPages, currentPage]);
 
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, currentPage]);
 
-  // Counts for tabs
-  const counts = {
-    All: rawAffiliates.length,
-    Active: rawAffiliates.filter((a) => a.status === 'Active').length,
-    Suspended: rawAffiliates.filter((a) => a.status === 'Suspended').length,
-  };
-
-  // Styling
-  const tierColors = {
-    'Tier 1': 'bg-purple-100 text-purple-700',
-    'Tier 2': 'bg-pink-100 text-pink-700',
-    'Tier 3': 'bg-blue-100 text-blue-700',
-    'Tier 4': 'bg-yellow-100 text-yellow-700',
-    'Tier 5': 'bg-green-100 text-green-700',
-  };
-
   const statusColors = {
-    Active: 'bg-green-100 text-green-700',
-    Suspended: 'bg-yellow-100 text-yellow-700',
+    Active: "bg-green-100 text-green-700",
+    Suspended: "bg-yellow-100 text-yellow-700",
   };
+
+  // Helper for dynamic change coloring
+  const getChangeColor = (value) =>
+    value >= 0 ? "text-green-600" : "text-red-600";
 
   return (
     <DashboardContainer>
@@ -121,62 +101,30 @@ const page = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-4 gap-6 mb-8">
-          {/* Total affiliates */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Total affiliates</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+          {/* Total Affiliates */}
+          {[
+            { label: "Total affiliates", value: summary.totalAffiliates?.value, change: summary.totalAffiliates?.change },
+            { label: "Active affiliates", value: summary.activeAffiliates?.value, change: summary.activeAffiliates?.change },
+            { label: "Inactive affiliates", value: summary.inactiveAffiliates?.value, change: summary.inactiveAffiliates?.change },
+            { label: "Top affiliate", value: summary.topAffiliate?.name, subtext: summary.topAffiliate?.tier },
+          ].map((stat, idx) => (
+            <div key={idx} className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-sm text-gray-600">{stat.label}</p>
+                <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+              </div>
+              <p className="text-3xl font-semibold text-gray-900 mb-1">
+                {stat.value || "-"}
+              </p>
+              {stat.change !== undefined && (
+                <div className={`flex items-center text-sm ${getChangeColor(stat.change)}`}>
+                  {stat.change >= 0 ? <ArrowUpRight className="w-4 h-4 mr-1" /> : <ArrowDownLeft className="w-4 h-4 mr-1" />}
+                  <span>{stat.change}% from last month</span>
+                </div>
+              )}
+              {stat.subtext && <p className="text-xs text-gray-500">{stat.subtext}</p>}
             </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">
-              {totalAffiliatesFormatted}
-            </p>
-            <div className="flex items-center text-sm">
-              <ArrowUpRight className="w-4 h-4 text-green-600 mr-1" />
-              <span className="text-green-600">+12% from last month</span>
-            </div>
-          </div>
-
-          {/* Active affiliates */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Active affiliates</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-            </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">
-              {activeAffiliatesFormatted}
-            </p>
-            <div className="flex items-center text-sm">
-              <ArrowUpRight className="w-4 h-4 text-green-600 mr-1" />
-              <span className="text-green-600">+12% from last month</span>
-            </div>
-          </div>
-
-          {/* Inactive affiliates */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Inactive affiliates</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-            </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">
-              {inactiveAffiliatesFormatted}
-            </p>
-            <div className="flex items-center text-sm">
-              <ArrowDownLeft className="w-4 h-4 text-red-600 mr-1" />
-              <span className="text-red-600">-10% from last month</span>
-            </div>
-          </div>
-
-          {/* Top affiliate */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Top affiliate</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-            </div>
-            <p className="text-lg font-semibold text-gray-900 mb-1">
-              Sarah Johnson
-            </p>
-            <p className="text-xs text-gray-500">Last month: Steve Jobs</p>
-          </div>
+          ))}
         </div>
 
         {/* Table */}
@@ -184,8 +132,7 @@ const page = () => {
           {/* Filter Tabs + Search */}
           <div className="flex justify-between items-center p-4 border-b">
             <div className="flex items-center space-x-2">
-              {['All', 'Active', 'Suspended'].map((tab) => {
-                const count = counts[tab];
+              {["All", "Active", "Suspended"].map((tab) => {
                 const isActive = activeFilter === tab;
                 return (
                   <button
@@ -196,11 +143,11 @@ const page = () => {
                     }}
                     className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
                       isActive
-                        ? 'text-blue-900 bg-blue-50'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        ? "text-blue-900 bg-blue-50"
+                        : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
-                    {tab} ({count})
+                    {tab} ({affiliates.filter((a) => tab === "All" || a.status === tab).length})
                   </button>
                 );
               })}
@@ -238,39 +185,32 @@ const page = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginated.map((aff) => (
+                {paginated.map((aff, idx) => (
                   <tr key={aff.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.id}.</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{idx + 1}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{aff.name}</p>
-                        <p className="text-xs text-gray-500">{aff.email}</p>
+                        <p className="text-sm font-medium text-gray-900">{aff.name || "-"}</p>
+                        <p className="text-xs text-gray-500">{aff.email || "-"}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[aff.status]}`}>
-                        {aff.status}
+                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[aff.status] || "bg-gray-100 text-gray-700"}`}>
+                        {aff.status || "-"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.target}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.target || "-"}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tierColors[aff.tier]}`}>
-                        {aff.tier}
+                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tierColors[aff.tier] || "bg-gray-100 text-gray-700"}`}>
+                        {aff.tier || "-"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(aff.commissions)}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(aff.commissions)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.conversionRate || 0}%</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.products || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link href={`/dashboard/affiliate/${aff.id}`} className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">View details</Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.conversion}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aff.products}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-  <Link
-    href={`/dashboard/affiliate/${aff.id}`}
-    className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-  >
-    View details
-  </Link>
-</td>
                   </tr>
                 ))}
               </tbody>
@@ -279,54 +219,19 @@ const page = () => {
 
           {/* Pagination */}
           <div className="flex items-center justify-between px-6 py-4 border-t">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Previous</span>
+            <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed">
+              <ChevronLeft className="w-4 h-4" /> <span>Previous</span>
             </button>
 
             <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setCurrentPage(1)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium flex items-center justify-center transition-colors ${
-                  currentPage === 1 ? 'bg-blue-900 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                1
-              </button>
-              {[2, 3].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                  className={`w-8 h-8 rounded-lg text-sm hover:bg-gray-100 transition-colors ${
-                    currentPage === p ? 'bg-blue-900 text-white' : 'text-gray-600'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <span className="text-sm text-gray-600">...</span>
-              {[8, 9, 10].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                  className={`w-8 h-8 rounded-lg text-sm hover:bg-gray-100 transition-colors ${
-                    currentPage === p ? 'bg-blue-900 text-white' : 'text-gray-600'
-                  }`}
-                >
-                  {p}
+              {[...Array(totalPages)].map((_, p) => (
+                <button key={p} onClick={() => setCurrentPage(p + 1)} className={`w-8 h-8 rounded-lg text-sm font-medium flex items-center justify-center transition-colors ${currentPage === p + 1 ? "bg-blue-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
+                  {p + 1}
                 </button>
               ))}
             </div>
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="flex items-center space-x-2 text-sm font-medium text-blue-900 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="flex items-center space-x-2 text-sm font-medium text-blue-900 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed">
               <span>Next</span>
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -337,4 +242,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default OverviewPage;
