@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api",
   timeout: 15000,
   withCredentials: true,
 });
@@ -10,9 +9,12 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      const authData = localStorage.getItem("authData");
+      if (authData) {
+        const token = JSON.parse(authData).accessToken;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
     }
     return config;
