@@ -4,19 +4,41 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import apiClient from "../api/client";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const [step, setStep] = useState("login");
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const router = useRouter();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      setStep("otp");
+    try {
+      setLoading(true);
+
+      const response = await apiClient.post("/auth/login?system=admin", {
+        email,
+        password,
+      });
+      
+      toast.success(response.data);
+      if (response.success) {
+        setStep("otp");
+      }
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Login failed — please try again.";
+
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,11 +62,29 @@ export default function LoginPage() {
     }
   };
 
-  const handleOtpSubmit = (e) => {
+  const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    const otpCode = otp.join("");
-    if (otpCode.length === 6) {
-      router.push("/dashboard/overview"); // ✅ Redirect to dashboard
+    try {
+      setLoading(true);
+      const otpCode = otp.join("");
+      const response = await apiClient.post("/auth/verify-otp", {
+        email,
+        otp: otpCode,
+      });
+      
+      toast.success(response.message);
+      if (response.success) {
+        router.push("/dashboard/overview");
+      }
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Login failed — please try again.";
+
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,9 +152,9 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-colors text-sm"
+                  className="w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-colors text-sm hover:cursor-pointer"
                 >
-                  Continue
+                  {loading ? "Loading..." : "Continue"}
                 </button>
 
                 <div className="text-center">
@@ -157,9 +197,9 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-colors text-sm"
+                  className="w-full bg-blue-900 hover:bg-blue-800 text-white font-medium py-3 rounded-lg transition-colors text-sm hover:cursor-pointer"
                 >
-                  Continue
+                  {loading ? "Loading..." : "Continue"}
                 </button>
               </form>
             </>
