@@ -27,7 +27,6 @@ const page = () => {
     const fetchProducts = async () => {
       try {
         const response = await apiClient.get("/admin/payout/overview");
-        console.log(22, response);
         const data = response.data;
 
         setOverview(data.summary);

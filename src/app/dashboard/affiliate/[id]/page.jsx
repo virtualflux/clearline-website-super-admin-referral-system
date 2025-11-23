@@ -26,7 +26,6 @@ export default function AffiliateDetail() {
     const fetchAffiliate = async () => {
       try {
         const response = await apiClient.get(`/admin/affiliates/${id}`);
-        console.log(response);
         setAffiliate(response.data.affiliate);
         setStats(response.data.stats);
         setTopProducts(response.data.topProducts);
@@ -61,8 +60,6 @@ export default function AffiliateDetail() {
       </DashboardContainer>
     );
   }
-
-  console.log(stats);
 
   const renderChange = (value) => {
     if (value === undefined || value === null) return null;

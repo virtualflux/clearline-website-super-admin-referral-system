@@ -30,8 +30,6 @@ const ProductsPage = () => {
       const response = await apiClient.get("/admin/product");
       const data = response.data;
 
-      console.log(data);
-
       setAllProducts(data.products);
     } catch (error) {
       const message =
@@ -301,7 +299,7 @@ const ProductsPage = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-900 font-medium">
-                          {product.sellingPrice}
+                          {formatCurrency(product.sellingPrice)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
