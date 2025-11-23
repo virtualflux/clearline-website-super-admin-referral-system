@@ -30,6 +30,8 @@ const ProductsPage = () => {
       const response = await apiClient.get("/admin/product");
       const data = response.data;
 
+      console.log(data);
+
       setAllProducts(data.products);
     } catch (error) {
       const message =
@@ -264,9 +266,20 @@ const ProductsPage = () => {
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                            {product.imageUrl ? (
+                              <img
+                                src={encodeURI(
+                                  `${process.env.NEXT_PUBLIC_API_FILE_URL}${product.imageUrl}`
+                                )}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                            )}
                           </div>
+
                           <div>
                             <div className="text-sm font-medium text-gray-900">
                               {product.name}
