@@ -17,6 +17,7 @@ const OverviewPage = () => {
     const fetchOverview = async () => {
       try {
         const response = await apiClient.get("/admin/affiliates/overview");
+        console.log(response)
         const data = response.data;
 
         const affiliatesWithColors = data.affiliates.affiliates.map((a) => ({

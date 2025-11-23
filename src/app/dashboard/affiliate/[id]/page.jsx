@@ -3,23 +3,33 @@
 import DashboardContainer from "@/components/DashboardContainer";
 import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import { Calendar, ChevronDown, ChevronLeft } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
+} from "lucide-react";
 import apiClient from "@/app/api/client";
 import toast from "react-hot-toast";
-import { formatCurrency } from "@/utils/helpers";
+import { formatCurrency, getChangeColor } from "@/utils/helpers";
 
 export default function AffiliateDetail() {
   const { id } = useParams();
   const router = useRouter();
   const [affiliate, setAffiliate] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [topProducts, setTopProducts] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAffiliate = async () => {
       try {
         const response = await apiClient.get(`/admin/affiliates/${id}`);
-        console.log(55, response);
+        console.log(response);
         setAffiliate(response.data.affiliate);
+        setStats(response.data.stats);
+        setTopProducts(response.data.topProducts);
       } catch (error) {
         const message =
           error?.message ||
@@ -52,6 +62,61 @@ export default function AffiliateDetail() {
     );
   }
 
+  console.log(stats);
+
+  const renderChange = (value) => {
+    if (value === undefined || value === null) return null;
+    const Arrow = value.toString().startsWith("-")
+      ? ArrowDownLeft
+      : ArrowUpRight;
+    return (
+      <span
+        className="flex items-center ml-1 text-sm"
+        style={{ color: getChangeColor(value) }}
+      >
+        <Arrow className={`w-4 h-4 mr-1 ${getChangeColor(value)}`} />
+        {value}%
+      </span>
+    );
+  };
+
+  const toggleAffiliateStatus = async () => {
+    try {
+      const response = await apiClient.post(`/admin/affiliates/suspend/${id}`);
+      if (response.success) {
+        toast.success(response.message);
+      }
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Fetch failed — please try again.";
+
+      toast.error(message);
+    }
+  };
+
+  const deleteAffiliate = async () => {
+    try {
+      const response = await apiClient.post(`/admin/affiliates/delete/${id}`);
+      if (response.success) {
+        toast.success(response.message);
+      }
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Fetch failed — please try again.";
+
+      toast.error(message);
+    }
+  };
+
+  const calculateConversionRate = (conversions, clicks) => {
+    if (!clicks || clicks === 0) return 0;
+    return ((conversions / clicks) * 100).toFixed(2);
+  };
+
   return (
     <DashboardContainer>
       <div className="p-8 bg-gray-50 min-h-screen">
@@ -60,9 +125,9 @@ export default function AffiliateDetail() {
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <button
               onClick={() => router.back()}
-              className="flex items-center space-x-1 hover:text-gray-900"
+              className="flex items-center space-x-1 hover:text-gray-900 cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 inline-block" />
               <span>{affiliate.name}</span>
             </button>
             <span>/</span>
@@ -73,10 +138,17 @@ export default function AffiliateDetail() {
             <select className="px-4 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option>Actions</option>
             </select>
-            <button className="px-4 py-2 text-sm text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
-              Suspend
+            <button
+              onClick={toggleAffiliateStatus}
+              className="inline-block px-4 py-2 text-sm text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-200 transition-colors cursor-pointer"
+            >
+              {affiliate.isActive ? "Suspend" : "Unsuspend"}
             </button>
-            <button className="px-4 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+
+            <button
+              onClick={deleteAffiliate}
+              className="inline-block px-4 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-200 transition-colors cursor-pointer"
+            >
               Delete profile
             </button>
           </div>
@@ -95,6 +167,8 @@ export default function AffiliateDetail() {
                 <span>
                   Joined {new Date(affiliate.joinedDate).toLocaleDateString()}
                 </span>
+                <span>•</span>
+                <span>Referral code: {affiliate.referralCode}</span>
               </div>
             </div>
             <span
@@ -122,65 +196,54 @@ export default function AffiliateDetail() {
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-6 mb-8">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Sales</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {formatCurrency(affiliate.totalSales)}
-                <span className="ml-1 text-sm text-green-600">
-                  {affiliate.salesChange}
-                </span>
-              </p>
-              <p className="text-xs text-gray-500">
-                {affiliate.salesLastMonth} from last month
-              </p>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Commission</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {formatCurrency(affiliate.totalCommission)}
-                <span className="ml-1 text-sm text-green-600">
-                  {affiliate.commissionChange}
-                </span>
-              </p>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Sales Rate</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {affiliate.totalSalesRate}
-                <span className="ml-1 text-sm text-green-600">
-                  {affiliate.salesRateChange}
-                </span>
-              </p>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Withdrawal</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {formatCurrency(affiliate.totalWithdrawal)}
-                <span className="ml-1 text-sm text-green-600">
-                  {affiliate.withdrawalChange}
-                </span>
-              </p>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Clicks</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {affiliate?.totalClicks || 0}
-                <span className="ml-1 text-sm text-green-600">
-                  {affiliate.clicksChange}
-                </span>
-              </p>
-            </div>
+          <div className="grid grid-cols-4 gap-6 mb-8">
+            {[
+              {
+                label: "Total Sales",
+                value: stats.totalSales,
+                change: 0,
+              },
+              {
+                label: "Total Commission",
+                value: formatCurrency(
+                  stats.totalCommissions.averageCommision.value
+                ),
+                change: stats.totalCommissions.averageCommision.change,
+              },
+              // {
+              //   label: "Total Orders",
+              //   value: stats.totalCommissions.totalOrders.value,
+              //   change: stats.totalCommissions.totalOrders.change,
+              // },
+              {
+                label: "Conversion Rate",
+                value: stats.totalCommissions.conversionRate.value + "%",
+                change: stats.totalCommissions.conversionRate.change,
+              },
+              {
+                label: "Total Referrals",
+                value: stats.totalReferrals,
+                change: 0,
+              },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <p className="text-sm text-gray-600">{stat.label}</p>
+                <p className="text-2xl font-semibold text-gray-900 flex justify-center items-center">
+                  {stat.value}
+                  {renderChange(stat.change)}
+                </p>
+                {stat.lastMonth !== undefined && (
+                  <p className="text-xs text-gray-500">
+                    {stat.lastMonth} from last month
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* Chart placeholder (replace with dynamic chart data as needed) */}
+          {/* Chart placeholder */}
           <div className="relative h-64 bg-gray-50 rounded-lg overflow-hidden">
             <svg className="w-full h-full" viewBox="0 0 800 250">
-              {/* Grid lines */}
               {[50, 100, 150, 200].map((y) => (
                 <line
                   key={y}
@@ -221,9 +284,9 @@ export default function AffiliateDetail() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Clicks
-                  </th>
+                  </th> */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Conversions
                   </th>
@@ -236,22 +299,22 @@ export default function AffiliateDetail() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {affiliate.products?.map((p, i) => (
+                {topProducts?.map((p, i) => (
                   <tr key={i} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {p.name}
+                      {p.productName}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
+                    {/* <td className="px-6 py-4 text-sm text-gray-900">
                       {p.clicks.toLocaleString()}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {p.conversions}
+                      {p.sales}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {formatCurrency(p.commission)}
+                      {formatCurrency(p.revenue)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {p.rate}
+                      {stats.totalCommissions.conversionRate.value}
                     </td>
                   </tr>
                 ))}

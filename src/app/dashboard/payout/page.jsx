@@ -118,7 +118,7 @@ const page = () => {
         <div className="bg-white rounded-lg shadow-sm">
           <div className="flex justify-between items-center p-4 border-b">
             <button className="px-3 py-1 text-sm font-medium text-blue-900 bg-blue-50 rounded-lg">
-              All Withdrawal (120)
+              All Withdrawal ({withdrawals?.length || 0})
             </button>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
