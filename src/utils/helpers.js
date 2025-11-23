@@ -1,3 +1,6 @@
+import { format } from "date-fns";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+
 export const formatCurrency = (value) => {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -17,4 +20,18 @@ export const tierColors = {
 export const getChangeColor = (value) => {
   if (!value) return "text-gray-500";
   return value.toString().startsWith("-") ? "text-red-600" : "text-green-600";
+};
+
+export const formatDate = (dateString) => {
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "";
+
+  return format(date, "dd/MM/yyyy");
+};
+
+export const renderArrow = (value) => {
+  const Arrow = value.toString().startsWith("-") ? ArrowDownLeft : ArrowUpRight;
+  return <Arrow className={`w-4 h-4 mr-1 ${getChangeColor(value)}`} />;
 };

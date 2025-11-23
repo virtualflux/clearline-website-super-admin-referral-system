@@ -1,6 +1,6 @@
-import DashboardContainer from '@/components/DashboardContainer';
-import React from 'react';
-import { format } from 'date-fns';
+"use client";
+import DashboardContainer from "@/components/DashboardContainer";
+import React, { useState, useEffect } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -9,59 +9,62 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-} from 'lucide-react';
-
-// Format currency: ₦120,000
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
-// Format date: 12/01/2025
-const formatDate = (dateString) => {
-  return format(new Date(dateString), 'dd/MM/yyyy');
-};
+} from "lucide-react";
+import {
+  formatCurrency,
+  formatDate,
+  getChangeColor,
+  renderArrow,
+} from "@/utils/helpers";
+import apiClient from "@/app/api/client";
+import toast from "react-hot-toast";
 
 const page = () => {
+  const [overview, setOverview] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await apiClient.get("/admin/payout/overview");
+        console.log(22, response);
+        const data = response.data;
+
+        setOverview(data.summary);
+        setWithdrawals(data.withdrawals.withdrawals);
+      } catch (error) {
+        const message =
+          error?.message ||
+          error?.response?.data?.message ||
+          "Fetch failed — please try again.";
+
+        toast.error(message);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   // Data exactly as in the screenshot
   const stats = {
-    totalRequests: 10,
-    pendingApproval: 12,
-    approvedRequests: 45,
-    totalPayout: 12000000,
+    totalRequests: overview?.totalWithdrawalRequest?.count || 0,
+    pendingApproval: overview?.pendingApproval?.count || 0,
+    approvedRequests: overview?.approvedRequest?.count || 0,
+    totalPayout: overview?.totalPayout?.amount || 0,
     changes: {
-      totalRequests: '+12%',
-      pendingApproval: '+12%',
-      approvedRequests: '-10%',
-      totalPayout: '+10%',
+      totalRequests: `${overview?.totalWithdrawalRequest?.change || 0}`,
+      pendingApproval: `${overview?.pendingApproval?.change || 0}`,
+      approvedRequests: `${overview?.approvedRequest?.change || 0}`,
+      totalPayout: `${overview?.totalPayout?.change || 0}`,
     },
   };
 
-  const withdrawals = Array.from({ length: 7 }, (_, i) => ({
-    id: i + 1,
-    name: 'Sarah Johnson',
-    email: 'Sarah@example.com',
-    status: 'Completed',
-    amount: 120000,
-    method: 'Bank transfer',
-    date: '12/01/2025',
-  }));
-
   return (
-    <DashboardContainer
-      title="Payout" 
-      subtitle=" Affiliate withdrawals"
-    >
+    <DashboardContainer title="Payout" subtitle=" Affiliate withdrawals">
       <div className="p-8 bg-gray-50 min-h-screen">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <div>
-            {/* <h1 className="text-2xl font-semibold text-gray-900">Payout</h1>
-            <p className="text-sm text-gray-600">Affiliate withdrawals</p> */}
-          </div>
+          <div></div>
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <Calendar className="w-4 h-4" />
             <span>Last 30 days</span>
@@ -71,59 +74,44 @@ const page = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-4 gap-6 mb-8">
-          {/* Total withdrawal request */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Total withdrawal request</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+          {[
+            {
+              label: "Total withdrawal request",
+              value: stats.totalRequests,
+              change: stats.changes.totalRequests,
+            },
+            {
+              label: "Pending approval",
+              value: stats.pendingApproval,
+              change: stats.changes.pendingApproval,
+            },
+            {
+              label: "Approved request",
+              value: stats.approvedRequests,
+              change: stats.changes.approvedRequests,
+            },
+            {
+              label: "Total payout",
+              value: formatCurrency(stats.totalPayout),
+              change: stats.changes.totalPayout,
+            },
+          ].map((stat, index) => (
+            <div key={index} className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-sm text-gray-600">{stat.label}</p>
+                <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+              </div>
+              <p className="text-3xl font-semibold text-gray-900 mb-1">
+                {stat.value}
+              </p>
+              <div className="flex items-center text-sm">
+                {renderArrow(stat.change)}
+                <span className={`${getChangeColor(stat.change)}`}>
+                  {stat.change}% from last month
+                </span>
+              </div>
             </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">{stats.totalRequests}</p>
-            <div className="flex items-center text-sm">
-              <ArrowUpRight className="w-4 h-4 text-green-600 mr-1" />
-              <span className="text-green-600">{stats.changes.totalRequests} from last month</span>
-            </div>
-          </div>
-
-          {/* Pending approval */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Pending approval</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-            </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">{stats.pendingApproval}</p>
-            <div className="flex items-center text-sm">
-              <ArrowUpRight className="w-4 h-4 text-green-600 mr-1" />
-              <span className="text-green-600">{stats.changes.pendingApproval} from last month</span>
-            </div>
-          </div>
-
-          {/* Approved request */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Approved request</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-            </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">{stats.approvedRequests}</p>
-            <div className="flex items-center text-sm">
-              <ArrowDownLeft className="w-4 h-4 text-red-600 mr-1" />
-              <span className="text-red-600">{stats.changes.approvedRequests} from last month</span>
-            </div>
-          </div>
-
-          {/* Total payout */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-sm text-gray-600">Total payout</p>
-              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-            </div>
-            <p className="text-3xl font-semibold text-gray-900 mb-1">
-              {formatCurrency(stats.totalPayout)}
-            </p>
-            <div className="flex items-center text-sm">
-              <ArrowUpRight className="w-4 h-4 text-green-600 mr-1" />
-              <span className="text-green-600">{stats.changes.totalPayout} from last month</span>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Table */}
@@ -174,15 +162,30 @@ const page = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{withdrawal.name}</p>
-                        <p className="text-xs text-gray-500">{withdrawal.email}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {withdrawal.affiliateName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {withdrawal.affiliateEmail}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      <span
+                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          withdrawal.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : withdrawal.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : withdrawal.status === "failed"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {withdrawal.status}
                       </span>
                     </td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatCurrency(withdrawal.amount)}
                     </td>
@@ -190,7 +193,7 @@ const page = () => {
                       {withdrawal.method}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(withdrawal.date)}
+                      {formatDate(withdrawal.requestedDate)}
                     </td>
                   </tr>
                 ))}
