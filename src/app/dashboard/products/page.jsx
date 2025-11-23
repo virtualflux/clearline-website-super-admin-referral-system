@@ -25,26 +25,12 @@ const ProductsPage = () => {
   const [commissionType, setCommissionType] = useState("Percentage");
   const [tiers, setTiers] = useState([]);
 
-  const createProduct = async () => {
+  const fetchProducts = async () => {
     try {
-      const response = await apiClient.post("/admin/product", {
-        name: productName,
-        description,
-        landingPage,
-        sellingPrice: Number(sellingPrice),
-        isActive: activeStatus,
-        tiers: tiers.map((t) => ({
-          ...t,
-          commission: t.percentage
-            ? (Number(sellingPrice) * Number(t.percentage)) / 100
-            : 0,
-          percentage: Number(t.percentage),
-        })),
-      });
+      const response = await apiClient.get("/admin/product");
+      const data = response.data;
 
-      if (response.success) {
-        toast.success(response.message);
-      }
+      setAllProducts(data.products);
     } catch (error) {
       const message =
         error?.message ||
@@ -55,23 +41,50 @@ const ProductsPage = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await apiClient.get("/admin/product");
-        const data = response.data;
+  const createProduct = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", productName);
+      formData.append("description", description);
+      formData.append("landingPage", landingPage);
+      formData.append("sellingPrice", sellingPrice);
+      formData.append("isActive", activeStatus);
+      if (productImage) formData.append("image", productImage);
 
-        setAllProducts(data.products);
-      } catch (error) {
-        const message =
-          error?.message ||
-          error?.response?.data?.message ||
-          "Fetch failed — please try again.";
+      tiers.forEach((tier, index) => {
+        formData.append(`tiers[${index}][name]`, tier.name);
+        formData.append(
+          `tiers[${index}][commission]`,
+          String(
+            tier.percentage
+              ? (Number(sellingPrice) * Number(tier.percentage)) / 100
+              : 0
+          )
+        );
+        formData.append(`tiers[${index}][percentage]`, String(tier.percentage));
+      });
 
-        toast.error(message);
+      const response = await apiClient.post("/admin/product", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.success) {
+        toast.success(response.message);
+        fetchProducts();
+        handleCloseModal();
       }
-    };
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Failed to create product";
+      toast.error(message);
+    }
+  };
 
+  useEffect(() => {
     fetchProducts();
   }, []);
 
@@ -447,20 +460,29 @@ const ProductsPage = () => {
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       Add image
                     </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">
-                        Drag and drop images here or{" "}
-                        <label className="text-[#082B82] cursor-pointer hover:text-[#082B82]">
-                          click to upload
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center flex flex-col items-center">
+                      <label className="cursor-pointer">
+                        {productImage ? (
+                          <img
+                            src={URL.createObjectURL(productImage)}
+                            alt="Preview"
+                            className="w-32 h-32 object-cover rounded-lg mb-2"
                           />
-                        </label>
-                      </p>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">
+                              Drag and drop images here or click to upload
+                            </p>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
                   </div>
 
