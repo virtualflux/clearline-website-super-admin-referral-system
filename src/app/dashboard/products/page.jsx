@@ -268,7 +268,7 @@ const ProductsPage = () => {
                             {product.imageUrl ? (
                               <img
                                 src={encodeURI(
-                                  `${process.env.NEXT_PUBLIC_API_FILE_URL}${product.imageUrl}`
+                                  `${process.env.NEXT_PUBLIC_API_BASE_URL}${product.imageUrl}`
                                 )}
                                 alt={product.name}
                                 className="w-full h-full object-cover"
