@@ -1,74 +1,105 @@
-'use client'
-import React, { useState } from 'react';
-import DashboardContainer from '@/components/DashboardContainer';
-import { Search, ChevronDown, Copy, X, Upload } from 'lucide-react';
+"use client";
+import React, { useState, useEffect } from "react";
+import DashboardContainer from "@/components/DashboardContainer";
+import { Search, ChevronDown, Copy, X, Upload } from "lucide-react";
+import { formatCurrency, tierColors } from "@/utils/helpers";
+import apiClient from "@/app/api/client";
+import toast from "react-hot-toast";
 
 const ProductsPage = () => {
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showActions, setShowActions] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [modalStep, setModalStep] = useState(1); // 1 for product details, 2 for commission
-  
+  const [modalStep, setModalStep] = useState(1);
+
   // Form states
-  const [productName, setProductName] = useState('');
-  const [description, setDescription] = useState('');
-  const [landingPage, setLandingPage] = useState('');
+  const [allProducts, setAllProducts] = useState([]);
+  const [productName, setProductName] = useState("");
+  const [description, setDescription] = useState("");
+  const [landingPage, setLandingPage] = useState("");
   const [productImage, setProductImage] = useState(null);
   const [activeStatus, setActiveStatus] = useState(true);
-  const [sellingPrice, setSellingPrice] = useState('');
-  const [commissionType, setCommissionType] = useState('Percentage');
+  const [sellingPrice, setSellingPrice] = useState("");
+  const [commissionType, setCommissionType] = useState("Percentage");
   const [tiers, setTiers] = useState([]);
 
-  // Mock products data
-  const allProducts = [
-    {
-      id: 1,
-      name: 'Kia kia plan',
-      description: 'This plan is',
-      image: '/placeholder-product.png',
-      webPage: 'https://clearline.com/kia-plan',
-      price: '₦1,200',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      name: 'Bronze Plan',
-      description: 'Basic tier plan',
-      image: '/placeholder-product.png',
-      webPage: 'https://clearline.com/bronze',
-      price: '₦2,500',
-      status: 'Active'
-    },
-    {
-      id: 3,
-      name: 'Silver Plan',
-      description: 'Mid tier plan',
-      image: '/placeholder-product.png',
-      webPage: 'https://clearline.com/silver',
-      price: '₦5,000',
-      status: 'Active'
-    },
-    {
-      id: 4,
-      name: 'Gold Plan',
-      description: 'Premium plan',
-      image: '/placeholder-product.png',
-      webPage: 'https://clearline.com/gold',
-      price: '₦10,000',
-      status: 'Disabled'
+  const fetchProducts = async () => {
+    try {
+      const response = await apiClient.get("/admin/product");
+      const data = response.data;
+
+      setAllProducts(data.products);
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Fetch failed — please try again.";
+
+      toast.error(message);
     }
-  ];
+  };
+
+  const createProduct = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", productName);
+      formData.append("description", description);
+      formData.append("landingPage", landingPage);
+      formData.append("sellingPrice", sellingPrice);
+      formData.append("isActive", activeStatus);
+      if (productImage) formData.append("image", productImage);
+
+      tiers.forEach((tier, index) => {
+        formData.append(`tiers[${index}][name]`, tier.name);
+        formData.append(
+          `tiers[${index}][commission]`,
+          String(
+            tier.percentage
+              ? (Number(sellingPrice) * Number(tier.percentage)) / 100
+              : 0
+          )
+        );
+        formData.append(`tiers[${index}][percentage]`, String(tier.percentage));
+      });
+
+      const response = await apiClient.post("/admin/product", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.success) {
+        toast.success(response.message);
+        fetchProducts();
+        handleCloseModal();
+      }
+    } catch (error) {
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Failed to create product";
+      toast.error(message);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   // Filter products
-  const filteredProducts = allProducts.filter(product => {
-    const matchesTab = 
-      activeTab === 'all' ? true :
-      activeTab === 'active' ? product.status === 'Active' :
-      activeTab === 'disabled' ? product.status === 'Disabled' : true;
+  const filteredProducts = allProducts.filter((product) => {
+    const matchesTab =
+      activeTab === "all"
+        ? true
+        : activeTab === "active"
+        ? product.isActive === true
+        : activeTab === "disabled"
+        ? product.isActive !== true
+        : true;
 
-    const matchesSearch = 
+    const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -77,8 +108,8 @@ const ProductsPage = () => {
 
   // Count products
   const allCount = allProducts.length;
-  const activeCount = allProducts.filter(p => p.status === 'Active').length;
-  const disabledCount = allProducts.filter(p => p.status === 'Disabled').length;
+  const activeCount = allProducts.filter((p) => p.isActive === true).length;
+  const disabledCount = allProducts.filter((p) => p.isActive !== true).length;
 
   // Pagination
   const itemsPerPage = 10;
@@ -109,7 +140,7 @@ const ProductsPage = () => {
       setModalStep(2);
     } else {
       // Handle form submission
-      console.log('Submit form');
+      createProduct();
       handleCloseModal();
     }
   };
@@ -117,23 +148,31 @@ const ProductsPage = () => {
   const handleCloseModal = () => {
     setShowAddModal(false);
     setModalStep(1);
-    setProductName('');
-    setDescription('');
-    setLandingPage('');
+    setProductName("");
+    setDescription("");
+    setLandingPage("");
     setProductImage(null);
     setActiveStatus(true);
-    setSellingPrice('');
-    setCommissionType('Percentage');
+    setSellingPrice("");
+    setCommissionType("Percentage");
     setTiers([]);
   };
 
   const addNewTier = () => {
-    setTiers([...tiers, { name: '', value: '' }]);
+    const index = tiers.length + 1;
+    setTiers([
+      ...tiers,
+      {
+        name: `Tier ${index}`,
+        commission: "",
+        percentage: "",
+      },
+    ]);
   };
 
   return (
-    <DashboardContainer 
-      title="Products" 
+    <DashboardContainer
+      title="Products"
       subtitle="Manage your affiliate products and track their performance"
     >
       <div className="space-y-6">
@@ -144,31 +183,31 @@ const ProductsPage = () => {
               {/* Tabs */}
               <div className="flex gap-2">
                 <button
-                  onClick={() => setActiveTab('all')}
+                  onClick={() => setActiveTab("all")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'all'
-                      ? 'bg-[#082B82] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                    activeTab === "all"
+                      ? "bg-[#082B82] text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   All Products ({allCount})
                 </button>
                 <button
-                  onClick={() => setActiveTab('active')}
+                  onClick={() => setActiveTab("active")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'active'
-                      ? 'bg-[#082B82] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                    activeTab === "active"
+                      ? "bg-[#082B82] text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   Active ({activeCount})
                 </button>
                 <button
-                  onClick={() => setActiveTab('disabled')}
+                  onClick={() => setActiveTab("disabled")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'disabled'
-                      ? 'bg-[#082B82] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                    activeTab === "disabled"
+                      ? "bg-[#082B82] text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   Disabled ({disabledCount})
@@ -187,7 +226,7 @@ const ProductsPage = () => {
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#082B82]focus:border-transparent w-64"
                   />
                 </div>
-                <button 
+                <button
                   onClick={() => setShowAddModal(true)}
                   className="px-4 py-2 bg-white border border-[#082B82] text-[#082B82] rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
                 >
@@ -225,18 +264,33 @@ const ProductsPage = () => {
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                            {product.imageUrl ? (
+                              <img
+                                src={encodeURI(
+                                  `${process.env.NEXT_PUBLIC_API_BASE_URL}${product.imageUrl}`
+                                )}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                            )}
                           </div>
+
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            <div className="text-xs text-gray-500">{product.description}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {product.name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {product.description}
+                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <button 
-                          onClick={() => handleCopyLink(product.webPage)}
+                        <button
+                          onClick={() => handleCopyLink(product.landingPage)}
                           className="flex items-center gap-2 text-sm text-[#082B82] hover:text-blue-800"
                         >
                           <span>Copy link</span>
@@ -244,21 +298,29 @@ const ProductsPage = () => {
                         </button>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-gray-900 font-medium">{product.price}</span>
+                        <span className="text-sm text-gray-900 font-medium">
+                          {formatCurrency(product.sellingPrice)}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          product.status === 'Active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {product.status}
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            product.isActive === true
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {product.isActive ? "Active" : "Disabled"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="relative">
                           <button
-                            onClick={() => setShowActions(showActions === product.id ? null : product.id)}
+                            onClick={() =>
+                              setShowActions(
+                                showActions === product.id ? null : product.id
+                              )
+                            }
                             className="flex items-center gap-2 px-4 py-2 bg-[#082B82] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
                           >
                             Actions
@@ -280,7 +342,10 @@ const ProductsPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-sm text-gray-500">
+                    <td
+                      colSpan="5"
+                      className="px-6 py-12 text-center text-sm text-gray-500"
+                    >
                       No products found matching your criteria
                     </td>
                   </tr>
@@ -291,7 +356,7 @@ const ProductsPage = () => {
 
           {/* Pagination */}
           <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <button 
+            <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -299,7 +364,7 @@ const ProductsPage = () => {
               <span>←</span>
               <span>Previous</span>
             </button>
-            
+
             <div className="flex items-center gap-1">
               {[...Array(Math.min(totalPages, 10))].map((_, idx) => {
                 const pageNum = idx + 1;
@@ -309,8 +374,8 @@ const ProductsPage = () => {
                     onClick={() => handlePageChange(pageNum)}
                     className={`w-8 h-8 rounded flex items-center justify-center text-sm transition-colors ${
                       currentPage === pageNum
-                        ? 'bg-[#082B82] text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        ? "bg-[#082B82] text-white"
+                        : "text-gray-600 hover:bg-gray-100"
                     }`}
                   >
                     {pageNum}
@@ -319,7 +384,7 @@ const ProductsPage = () => {
               })}
             </div>
 
-            <button 
+            <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -339,15 +404,15 @@ const ProductsPage = () => {
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {modalStep === 1 ? 'Add product' : 'Set commission'}
+                  {modalStep === 1 ? "Add product" : "Set commission"}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {modalStep === 1 
-                    ? 'Create a new product for affiliates to promote' 
-                    : 'Create a new product for affiliates to promote'}
+                  {modalStep === 1
+                    ? "Create a new product for affiliates to promote"
+                    : "Create a new product for affiliates to promote"}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={handleCloseModal}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -406,20 +471,29 @@ const ProductsPage = () => {
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       Add image
                     </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">
-                        Drag and drop images here or{' '}
-                        <label className="text-[#082B82] cursor-pointer hover:text-[#082B82]">
-                          click to upload
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center flex flex-col items-center">
+                      <label className="cursor-pointer">
+                        {productImage ? (
+                          <img
+                            src={URL.createObjectURL(productImage)}
+                            alt="Preview"
+                            className="w-32 h-32 object-cover rounded-lg mb-2"
                           />
-                        </label>
-                      </p>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">
+                              Drag and drop images here or click to upload
+                            </p>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
                   </div>
 
@@ -438,7 +512,7 @@ const ProductsPage = () => {
                         onChange={(e) => setActiveStatus(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#082B82]"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#082B82]"></div>
                     </label>
                   </div>
                 </div>
@@ -447,7 +521,7 @@ const ProductsPage = () => {
                   {/* Product Name Display */}
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-gray-900 uppercase">
-                      {productName || 'KIA KIA PLAN'}
+                      {productName || "KIA KIA PLAN"}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Description</p>
                   </div>
@@ -458,7 +532,9 @@ const ProductsPage = () => {
                       Selling Price
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        ₦
+                      </span>
                       <input
                         type="text"
                         value={sellingPrice}
@@ -488,41 +564,60 @@ const ProductsPage = () => {
                     <label className="block text-sm font-medium text-gray-900 mb-3">
                       Tier settings
                     </label>
-                    
+
                     {tiers.length > 0 && (
                       <div className="mb-3">
                         <div className="grid grid-cols-[1fr,120px,100px,40px] gap-3 mb-2">
-                          <div className="text-xs text-gray-500 font-medium">Tier</div>
-                          <div className="text-xs text-gray-500 font-medium">Commission</div>
-                          <div className="text-xs text-gray-500 font-medium">Percentage</div>
+                          <div className="text-xs text-gray-500 font-medium">
+                            Tier
+                          </div>
+                          <div className="text-xs text-gray-500 font-medium">
+                            Commission
+                          </div>
+                          <div className="text-xs text-gray-500 font-medium">
+                            Percentage
+                          </div>
                           <div></div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           {tiers.map((tier, index) => {
                             const tierColors = [
-                              'bg-indigo-100 text-indigo-700',
-                              'bg-purple-100 text-purple-700',
-                              'bg-blue-100 text-[#082B82]',
-                              'bg-amber-100 text-amber-700',
-                              'bg-emerald-100 text-emerald-700'
+                              "bg-indigo-100 text-indigo-700",
+                              "bg-purple-100 text-purple-700",
+                              "bg-blue-100 text-[#082B82]",
+                              "bg-amber-100 text-amber-700",
+                              "bg-emerald-100 text-emerald-700",
                             ];
                             return (
-                              <div key={index} className="grid grid-cols-[1fr,120px,100px,40px] gap-3 items-center">
-                                <div className={`px-3 py-2 rounded-md text-sm font-medium ${tierColors[index % 5]}`}>
+                              <div
+                                key={index}
+                                className="grid grid-cols-[1fr,120px,100px,40px] gap-3 items-center"
+                              >
+                                <div
+                                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                                    tierColors[index % 5]
+                                  }`}
+                                >
                                   Tier {index + 1}
                                 </div>
                                 <input
                                   type="text"
                                   placeholder="₦300"
-                                  value={tier.commission}
-                                  onChange={(e) => {
-                                    const newTiers = [...tiers];
-                                    newTiers[index].commission = e.target.value;
-                                    setTiers(newTiers);
-                                  }}
-                                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#082B82] focus:border-transparent"
+                                  value={
+                                    tier.percentage && sellingPrice
+                                      ? (
+                                          (Number(sellingPrice) *
+                                            Number(tier.percentage)) /
+                                          100
+                                        ).toFixed(2)
+                                      : ""
+                                  }
+                                  disabled
+                                  className="px-3 py-2 border border-gray-300 bg-gray-100 rounded-lg text-sm"
+                                  readOnly
                                 />
+
                                 <div className="flex items-center gap-2">
                                   <input
                                     type="text"
@@ -530,7 +625,8 @@ const ProductsPage = () => {
                                     value={tier.percentage}
                                     onChange={(e) => {
                                       const newTiers = [...tiers];
-                                      newTiers[index].percentage = e.target.value;
+                                      newTiers[index].percentage =
+                                        e.target.value;
                                       setTiers(newTiers);
                                     }}
                                     className="w-16 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#082B82] focus:border-transparent"
@@ -539,7 +635,9 @@ const ProductsPage = () => {
                                 </div>
                                 <button
                                   onClick={() => {
-                                    const newTiers = tiers.filter((_, i) => i !== index);
+                                    const newTiers = tiers.filter(
+                                      (_, i) => i !== index
+                                    );
                                     setTiers(newTiers);
                                   }}
                                   className="text-red-500 hover:text-red-700"
@@ -552,7 +650,7 @@ const ProductsPage = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <button
                       onClick={addNewTier}
                       className="w-full px-4 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
@@ -584,7 +682,7 @@ const ProductsPage = () => {
                 onClick={handleContinue}
                 className="px-6 py-2 bg-[#082B82] text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
               >
-                {modalStep === 1 ? 'Continue' : 'Done'}
+                {modalStep === 1 ? "Continue" : "Done"}
               </button>
             </div>
           </div>
